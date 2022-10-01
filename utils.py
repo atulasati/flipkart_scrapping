@@ -49,70 +49,102 @@ def get_price(driver, thread_arg):
     
     return thread_arg
 
-def get_product_details(driver, thread_arg):
-    soup = BeautifulSoup(driver.page_source, 'html.parser')
-    brand, bullet1, bullet2, bullet3, color, touchscreen, in_the_box, model_number, touchscreen, model_name, size, pack_of = [""]*12
-           
-    # img_lists = soup.find('img',attrs={'class':'_2r_T1I _396QI4'}).get('src')     
-    # print("img_list :- ", img_lists)    
-    
+def get_brand(driver, thread_arg):
+    brand = ""
     try:
-        # soup = BeautifulSoup(driver.page_source, 'html.parser')
+        soup = BeautifulSoup(driver.page_source, 'html.parser')
         brand = soup.find('span',attrs={'class':'G6XhRU'}).text
         print("brand :- ", brand)
         if not brand:        
             brand = soup.find('span',attrs={'class':'B_NuCI'}).tex
             brand = brand.split(" ")[0]
             print("Brand:- ", brand)
+        
     except:
         brand = soup.find('span',attrs={'class':'B_NuCI'}).text
         brand = brand.split(" ")[0]
         print("brand 3 :- ", brand)
         print("exception in brand")
         pass
+    thread_arg[0] = brand
+    return thread_arg
 
+def get_img_list(driver, thread_arg):
+    imgs = []
     try:
-        bullet1=driver.find_element(By.CLASS_NAME,'_2418kt').text
+        soup = BeautifulSoup(driver.page_source, 'html.parser')
+        img_list = soup.find_all('div',attrs={'class':'_2E1FGS'})
+        if not img_list:
+            img_list = soup.find_all('div',attrs={'class':'_312yBx SFzpgZ'})
+
+        for img in img_list:
+            img = img.find('img')['src'].replace('e/128', 'e/720').replace('0/128', '0/640')
+            imgs.append(img)
+    except Exception as er:
+        print("Exception:- ", er)
+        pass
+    thread_arg[0] = (imgs + [""]*7)[:7]
+    return thread_arg
+
+def get_features(driver, thread_arg):
+    soup = BeautifulSoup(driver.page_source, 'html.parser')
+    bullet1, bullet2, bullet3 = [""]*3
+           
+    # img_lists = soup.find('img',attrs={'class':'_2r_T1I _396QI4'}).get('src')     
+    # print("img_list :- ", img_lists)    
+    try:
+        bullet1 = driver.find_element(By.CLASS_NAME,'_2418kt').text
         print("bullet1:- ", bullet1)
     except:
         print("exception in bullet1")
         pass
     try:
-        bullet2=driver.find_element(By.CLASS_NAME,'_250Jnj').text
+        bullet2 = driver.find_element(By.CLASS_NAME,'_250Jnj').text
         print("bullet2:- ", bullet2)
     except:
         print("exception in bullet2")
         pass
     try:
-        bullet3=driver.find_element(By.CLASS_NAME,'xDHSrl').text
+        bullet3 = driver.find_element(By.CLASS_NAME,'xDHSrl').text
         print("bullet3:- ", bullet3) 
     except:
         print("exception in bullet3")
-        pass    
-    
+        pass
+    thread_arg[0] =  {        
+        "bullet1": bullet1,
+        "bullet2": bullet2,
+        "bullet3": bullet3,
+    }
+    return thread_arg
+
+def get_product_details(driver, thread_arg):
+    soup = BeautifulSoup(driver.page_source, 'html.parser')
+    color, in_the_box, model_number, touchscreen, model_name, size, pack_of = [""]*7
+           
+    # img_lists = soup.find('img',attrs={'class':'_2r_T1I _396QI4'}).get('src')     
+    # print("img_list :- ", img_lists)    
     try:   
         table = soup.find("table", { "class" : "_14cfVK" })
         # print('table = ',table)                
         table = pd.read_html(str(table))       
-        for field, value in zip(table[0][0], table[0][1]):            
-                if not in_the_box and "In The Box" == field :
-                    in_the_box = value
-                    print("In The Box:- ", in_the_box)
-                if not model_number and "Model Number" == field :
-                    model_number = value
-                    print("Model Number:- ", model_number)      
-                if not model_name and "Model Name" in field:
-                    model_name = value
-                    print("Model Name; ", model_name)
-                if not color and "Color" == field :
-                    color = value
-                    print("Color:- ", color)
-                if not touchscreen and "Touchscreen" == field :
-                    touchscreen = value
-                    print("Touchscreen:- ", touchscreen)
-                
-    except Exception as e:
-        print(e)
+        for field, value in zip(table[0][0], table[0][1]):
+            if not in_the_box and "In The Box" == field :
+                in_the_box = value
+                print("In The Box:- ", in_the_box)
+            if not model_number and "Model Number" == field :
+                model_number = value
+                print("Model Number:- ", model_number)      
+            if not model_name and "Model Name" in field:
+                model_name = value
+                print("Model Name; ", model_name)
+            if not color and "Color" == field :
+                color = value
+                print("Color:- ", color)
+            if not touchscreen and "Touchscreen" == field :
+                touchscreen = value
+                print("Touchscreen:- ", touchscreen)                
+    except Exception as er:
+        print("Exception product table :- ", er)
         pass
     # print(in_the_box,model_number,model_name,color,touchscreen)
     try:
@@ -129,15 +161,10 @@ def get_product_details(driver, thread_arg):
             if not pack_of and "Pack of" in field :
                 pack_of = value.text
                 print("Pack of:- ", pack_of)            
-    except Exception as e:
-        print(e)
-        pass
-    
+    except Exception as er:
+        print("Exception in product list :- ", er)
+        pass    
     thread_arg[0] =  {
-        "brand": brand,
-        "bullet1": bullet1,
-        "bullet2": bullet2,
-        "bullet3": bullet3,
         "color": color,
         "in_the_box": in_the_box,
         "model_number": model_number,
@@ -147,6 +174,7 @@ def get_product_details(driver, thread_arg):
         "touchscreen": touchscreen,       
     }
     return thread_arg
+
 
 def get_date():
     date = '29/09/2022 18:30:30'

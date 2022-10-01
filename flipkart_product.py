@@ -152,7 +152,7 @@ if __name__ == "__main__":
         s.map('TNotebook.Tab', background=[('selected', '#ccffcc')])
         date = utils.get_date()
         #  ifdatetime.datetime.now() > date: raise Exception
-        root.title("Amazon Product")
+        root.title("Flipkart Product")
         mailSendHandler = MailSendHandler(asin_file, root, 2)
         mailSendHandler.initialize()
     except: print('END')

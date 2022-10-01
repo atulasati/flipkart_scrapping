@@ -27,7 +27,8 @@ def get_product_value(fsn):
     if fsn:
         print(f"\n\n START for ASIN: {fsn}")
         dict_ = {}
-        title, mrp, price = "", "", ""        
+        title, mrp, price, img_src_list = "", "", "", ""
+              
         url = f"https://www.flipkart.com/product/p/item?pid={fsn}"
         date = utils.get_date()
 
@@ -39,34 +40,47 @@ def get_product_value(fsn):
             print(url)
             
             get_title = [None] * 2
+            get_brand = [None] * 2
             get_mrp  = [None] * 2
             get_price  = [None] * 2
-            get_product_details  = [None] * 2            
-           
+            get_features = [None] * 2
+            get_product_details  = [None] * 2
+            get_img_list = [None] * 2          
         
             thread_1 = threading.Thread(target= utils.get_title ,args=(driver,get_title) ,name='thread_1')
-            thread_2 = threading.Thread(target= utils.get_mrp ,args=(driver,get_mrp) ,name='thread_2')
-            thread_3 = threading.Thread(target= utils.get_price ,args=(driver,get_price) ,name='thread_3')
-            thread_4 = threading.Thread(target= utils.get_product_details ,args=(driver,get_product_details) ,name='thread_4')
+            thread_2 = threading.Thread(target= utils.get_brand ,args=(driver,get_brand) ,name='thread_2')
+            thread_3 = threading.Thread(target= utils.get_mrp ,args=(driver,get_mrp) ,name='thread_3')
+            thread_4 = threading.Thread(target= utils.get_price ,args=(driver,get_price) ,name='thread_4')
+            thread_5 = threading.Thread(target= utils.get_img_list ,args=(driver,get_img_list) ,name='thread_5')
+            thread_6 = threading.Thread(target= utils.get_features ,args=(driver,get_features) ,name='thread_6')
+            thread_7 = threading.Thread(target= utils.get_product_details ,args=(driver,get_product_details) ,name='thread_7')
            
-
             thread_1.start()
             thread_2.start()
             thread_3.start()
             thread_4.start()
-            
+            thread_5.start()
+            thread_6.start()
+            thread_7.start()            
 
             thread_1.join()
             thread_2.join()
             thread_3.join()
-            thread_4.join()                 
+            thread_4.join()
+            thread_5.join()
+            thread_6.join()
+            thread_7.join()
 
-           
+
             title = get_title[0]
             print("\n\n\tTITLE :",title)
             if not title:
                 return 0
             dict_["Product Title"] = title
+
+            brand = get_brand[0]
+            print("\n\n\tBRAND :",brand)            
+            dict_["Brand"] = brand
 
             mrp = get_mrp[0]
             print("\n\n\tMRP:- ", mrp)
@@ -83,13 +97,20 @@ def get_product_value(fsn):
                         dict_["M.R.P."] = 'Currently Unavailable'
                         dict_["Price"] = 'Currently Unavailable'
                 except:
-                    dict_["M.R.P."] = 'Asin Blocked, Retry Again'
-                    dict_["Price"] = 'Asin Blocked, Retry Again'
+                    dict_["M.R.P."] = 'FSN Blocked, Retry Again'
+                    dict_["Price"] = 'FSN Blocked, Retry Again'
                     pass
 
-            print("\n\n\tDETAILS :\n\n\t", get_product_details[0])
-            dict_.update(get_product_details[0])
+            img_src_list = get_img_list[0]
+            print("\n\n\tLIST OF IMAGES :\n", img_src_list)
+            for i in range(len(img_src_list)):
+                dict_[f"Image{i+1}"] = img_src_list[i]
+
+            print("\n\n\FEATURES :\n\n\t", get_features[0])
+            dict_.update(get_features[0])
             
+            print("\n\n\tDETAILS :\n\n\t", get_product_details[0])
+            dict_.update(get_product_details[0])            
     
         except:
             print("fsn :", fsn)
