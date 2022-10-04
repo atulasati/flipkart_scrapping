@@ -31,17 +31,48 @@ ROOT_DIR = os.path.dirname(os.path.abspath(__file__))
 class FlipkartItem(Item):
     fsin = Field()
     title = Field()
+    mapping = Field()
+    product_dsc = Field()
+    brand = Field()
     mrp = Field()
     price = Field()
-    product_details = Field()
-    description = Field()
+    # product_details = Field()
+    # description = Field()
     img_urls = Field()
     Bullet_Point_1 = Field()
     Bullet_Point_2 = Field()
     Bullet_Point_3 = Field()
-    seller = Field()
-    warranty = Field()
+    Bullet_Point_4 = Field()
+    Bullet_Point_5 = Field()
 
+    # seller = Field()
+    warranty = Field()
+    size = Field()
+    pack_of = Field()
+    model_name = Field()
+    color = Field()
+    pattern = Field()
+    model_number = Field()
+    ideal_for = Field()
+    sleeve_type = Field()
+    country_of_origin = Field()
+    neck = Field()
+    fit = Field()
+    width = Field()
+    weight = Field()
+    height = Field()
+    mapping = Field()
+    #for images
+    image1 = Field()
+    image2 = Field()
+    image3 = Field()
+    image4 = Field()
+    image5 = Field()
+    image6 = Field()
+    image7 = Field()
+    image8 = Field()
+    image9 = Field()
+    image10 = Field()
 
 class FlipkartSpider(scrapy.Spider):
     name = 'flipkart_spider'
@@ -49,24 +80,62 @@ class FlipkartSpider(scrapy.Spider):
     data = []
 
     def start_requests(self):
-        fsin = pd.read_excel('tmp/FSN_id.xlsx')
+        fsin = pd.read_excel('FSN_id.xlsx')
 
         for id in fsin['given_fsn']:
             yield scrapy.Request(f"https://www.flipkart.com/product/p/item?pid={id}", callback=self.new_parsing_method)
 
     def new_parsing_method(self, response):
         reward = FlipkartItem()
-        reward['fsin'] = response.url
+        self.start_requests()
 
-        try: reward['title'] = response.xpath('//*[@id="container"]/div/div[3]/div[1]/div[2]/div[2]/div/div[1]/h1/span/text()').get()
+        reward['fsin'] = response.url.split("=")[1]
+        pro_dsc, size, pack_of, brand, model_name, ideal_for, country_of_origin, model_number, material, color, pattern, sleeve_type, length, width, height, weight, fit, neck, width, weight, height, warranty = [""]*22
+
+        try: reward['title'] = response.xpath('//span[@class="B_NuCI"]/text()').get()
         except: reward['title'] = 'null'
 
+        try: 
+            pro_dsc = response.xpath('//div[@class="_1mXcCf RmoJUa"]/p/text()').get()
+            if not pro_dsc:
+                pro_dsc = response.xpath('//div[@class="_1mXcCf RmoJUa"]/text()').get()
+                if not pro_dsc:
+                    pro_dsc = description = response.xpath('//div[@class="_1AN87F"]/text()').get()
+            reward['product_dsc'] = pro_dsc
+        except: 
+            pass
+        reward['product_dsc'] = pro_dsc
+
+        try:
+            brand = response.xpath('//span[@class="G6XhRU"]/text()').get()
+            brand = brand.split("\xa0")[0]
+            print("Brand 1:- ", brand)
+            if not brand:
+                brand = response.xpath('//span[@class="B_NuCI"]/text()').get()
+                brand = brand.split(" ")[0]
+                print("Brand 2:- ", brand)
+        except:
+            brand = response.xpath('//span[@class="B_NuCI"]/text()').get()
+            brand = brand.split(" ")[0]
+            print("brand 3 :- ", brand)
+            print("exception in brand")
+            pass
+        reward['brand'] = brand
+        
+        try: 
+            mapping = response.xpath('//a[@class="_2whKao"]/text()').extract()
+            reward['mapping'] = ">".join(mapping)
+        except:
+            reward['mapping'] = 'null'
+        
         try: reward['mrp'] = response.xpath('//div[@class="_30jeq3 _16Jk6d"]/text()').get()
         except : reward['mrp'] = 'null'
 
         try: reward['price'] = response.xpath('//div[@class="_3I9_wc _2p6lqe"]/text()').extract()[-1]
         except: reward['price'] = 'null'
 
+        # self.get_product_details(response):
+        
         product_keys = response.xpath('//td[@class="_1hKmbr col col-3-12"]/text()').extract()
         product_values = response.xpath('//td[@class="URwL2w col col-9-12"]/ul/li/text()').extract()
 
@@ -74,37 +143,125 @@ class FlipkartSpider(scrapy.Spider):
             product_keys = response.xpath('//div[@class="col col-3-12 _2H87wv"]/text()').extract()
             product_values = response.xpath('//div[@class="col col-9-12 _2vZqPX"]/text()').extract()
         
-        products = {}
+        # products = {}
         for key,value in zip(product_keys, product_values):
-            products[key] = value
+            # products[key] = value
+            if not size and "size" in key.lower():
+                size = value
+                print("Size:- ", size)
+            if not pack_of and "pack of" in key.lower():
+                pack_of = value
+                print("Pack of:- ", pack_of)
+            if not model_name and "model name" in key.lower():
+                model_name = value
+                print("Model Name; ", model_name)
+            if not color and "color" in key.lower():
+                color = value
+                print("Color:- ", color)
+            if not pattern and "pattern" in key.lower():
+                pattern = value
+                print("Pattern:- ", pattern)
+            if not model_number and "model number" in key.lower():
+                model_number = value
+                print("Model Number:- ", model_number)
+            if not ideal_for and 'ideal for ' in key.lower():
+                ideal_for = value
+                print("Ideal for:- ", ideal_for)
+            if not sleeve_type and "sleeve" in key.lower():
+                sleeve_type = value
+                print("Sleeve:- ", sleeve_type)
+            if not country_of_origin and "country of origin" in key.lower():
+                country_of_origin = value
+                print("Country of Origin:- ", country_of_origin)
+            if not neck and "neck" in key.lower():
+                neck = value
+                print("Neck:- ", neck)
+            if not fit and "fit" in key.lower():
+                fit = value
+                print("Fit:- ", fit)
+            if not width and "width" in key.lower():
+                width = value
+                print("Width:- ", width)
+            if not weight and "weight" in key.lower():
+                weight = value
+                print("weight:- ", weight)
+            if not height and "height" in key.lower():
+                height = value
+                print("Height:- ", height)
+            if not warranty and "warranty period" in key.lower():
+                warranty = value
+                print("Warranty:- ", warranty)
 
-        reward['product_details'] = products
+
+        reward['size'] = size
+        reward['pack_of'] = pack_of
+        reward['model_name'] = model_name
+        reward['color'] = color
+        reward['pattern'] = pattern
+        reward['model_number'] = model_number
+        reward['ideal_for'] = ideal_for
+        reward['sleeve_type'] = sleeve_type
+        reward['country_of_origin'] = country_of_origin
+        reward['neck'] = neck
+        reward['fit'] = fit
+        reward['width'] = width
+        reward['weight'] = weight
+        reward['height'] = height
+        
+
 
         imgs = []
-        img_list = response.xpath('//div[@class="_2E1FGS"]/img/@src').extract()
-
-        if len(img_list) == 0:
-            img_list = response.xpath('//div[@class="_312yBx SFzpgZ"]/img/@src').extract()
-
-        for i, img in enumerate(img_list[:10]):
-            imgs.append(img.replace('e/128', 'e/720').replace('0/128', '0/640'))
-        
-        reward['img_urls'] = imgs
-
-        description = response.xpath('//div[@class="_1mXcCf RmoJUa"]/text()').get()
         try:
-            if len(description) == 0:
-                description = response.xpath('//div[@class="_1AN87F"]/text()').get()
-        except: pass
-        reward['description'] = description
+            img_list = response.xpath('//div[@class="_2E1FGS"]/img/@src').extract()
 
-        reward['Bullet_Point_1'] = response.xpath('//div[@class="_2418kt"]/ul/li/text()').extract()    
+            if len(img_list) == 0:
+                img_list = response.xpath('//div[@class="_312yBx SFzpgZ"]/img/@src').extract()
+
+            for i, img in enumerate(img_list[:10]):
+                imgs.append(img.replace('e/128', 'e/720').replace('0/128', '0/640'))
+
+            for i in range(1,11):
+                l = len(imgs)
+                if i<l:
+                    reward[f"image{i}"] = imgs[i]
+                else:
+                    reward[f"image{i}"] = 'null'
+        except:
+            for i in range(1,11):                
+                reward[f"image{i}"] = 'null'
+                   
+
+        # description = response.xpath('//div[@class="_1mXcCf RmoJUa"]/text()').get()
+        # try:
+        #     if len(description) == 0:
+        #         description = response.xpath('//div[@class="_1AN87F"]/text()').get()
+        # except: pass
+        # reward['description'] = description
+
+        
+        try: reward['Bullet_Point_1'] = response.xpath('//div[@class="_2418kt"]/ul/li/text()').extract()
+        
+        except: reward['Bullet_Point_1'] = 'null'
             
-        reward['Bullet_Point_2'] = response.xpath('//div[@class="_1RLviY"]/span/span/text()').extract()
+        try: reward['Bullet_Point_2'] = response.xpath('//div[@class="_1RLviY"]/span/span/text()').extract()
+         
+        except: reward['Bullet_Point_2'] = 'null'
     
-        reward['Bullet_Point_3'] = response.xpath('//div[@class = "_2MJMLX"]/text()').extract()
+        try: reward['Bullet_Point_3'] = response.xpath('//div[@class = "_2MJMLX"]/text()').extract()
+        except: reward['Bullet_Point_3'] = 'null'
 
-        reward['warranty'] = response.xpath('//div[@class="_2MJMLX"]/text()').get()
+        try: reward['Bullet_Point_4'] = 'null'
+        except: reward['Bullet_Point_4'] = 'null'
+
+        try: reward['Bullet_Point_5'] = 'null'
+        except: reward['Bullet_Point_5'] = 'null'
+
+        try:
+            if not warranty:
+                warranty = response.xpath('//div[@class="_2MJMLX"]/text()').get()
+        except: pass
+        
+        reward['warranty'] = warranty
 
         # print(reward.values)
         return reward
@@ -135,7 +292,7 @@ class MailSendHandler():
         self.files.grid(row=0, column=0, columnspan=2, sticky=W, padx=25, pady=25)        
         self.asinFileButton = tk.Button(self.files, text="Browse asin File:", width=18, compound="c", bg='cornflower blue', fg='#ffffff', command=self.get_asin_file)
 
-        self.options = [10,50,100,200,500,700,1000]
+        self.options = [10,20,50,100,200,300,500]
         self.clicked = StringVar()
         self.clicked.set( "Select Total number of FSN-ID" )
         self.drop = OptionMenu(self.files , self.clicked , *self.options)
@@ -168,28 +325,37 @@ class MailSendHandler():
                 # date = utils.get_date()
                 # if datetime.datetime.now() > date: raise Exception
                 df = pd.read_excel(self.asin_file)
-                try:
-                    if os.path.isdir(ROOT_DIR+'/tmp'):
-                        shutil.rmtree(ROOT_DIR+'/tmp')      
-                except: pass  
-                os.makedirs(ROOT_DIR+'/tmp')
-                df.to_excel(os.path.join(os.getcwd(), "tmp/FSN_id.xlsx"), index = False)
+                # try:
+                #     # if os.path.isdir(ROOT_DIR+'/tmp'):
+                #     #     shutil.rmtree(ROOT_DIR+'/tmp')
+                #     if f'{os.path.join(os.getcwd())}\\FSN_id.xlsx':    
+                # except: pass  
+                # os.makedirs(ROOT_DIR+'/tmp')
+                df.to_excel(os.path.join(os.getcwd(), "FSN_id.xlsx"), index = False)
             else:
                 messagebox.showerror("Error", "Open .xlsx file only")
         else:           
             messagebox.showerror("Error", "Unable to open asin file")
         return self.asin_file
 
+    def get_date(self):
+        date = '04/10/2022 18:30:30'
+        date = datetime.datetime.strptime(date, '%d/%m/%Y %H:%M:%S')
+        max_date = date + datetime.timedelta(days=7)
+        return max_date
+    
     def scrape(self):
         process = CrawlerProcess(settings={
             "FEEDS": {
-                "tmp/data.json": {"format": "json"},
+                "data.json": {"format": "json"},
             },
         })
         process.crawl(FlipkartSpider)
         process.start()
 
     def run_spider(self):
+        if datetime.datetime.now() > self.get_date(): raise Exception
+
         self.scrape()
 
         self.files = LabelFrame(self.tab1, text='Open Scrapped file', font=('Arial', '12', 'bold'), bd=5, relief=RIDGE)
@@ -203,80 +369,28 @@ class MailSendHandler():
         messagebox.showinfo("Success", f"Amozon Product Scraping Done!")
 
 
-    def call_subprocess_command(self):
-        """
-        Call the subprocess command fo call scrapy
-        :return:
-        """
-        subprocess.run('scrapy crawl flipkart_spider -o tmp/data.json')
-
-    def send_function(self):     
-        # code for send button function
-        dict_list = []
-        dict_skip = []
-        dict_s = {}
-        self.MAX_RECORDS = int(self.clicked.get())
-        print("MAX_RECORDS:- --", self.MAX_RECORDS)
-        try:
-            if(self.asin_file.split(".")[-1] == 'xlsx'):
-                # date = utils.get_date()
-                # if datetime.datetime.now() > date: raise Exception
-                df = pd.read_excel(self.asin_file)
-                print(df["given_fsn"])
-                for i, value in enumerate(df["given_fsn"][:self.MAX_RECORDS]):
-                    given_fsn = value
-                    # if i>=2:break
-                    # given_fsn = "B08XXY9SP8"
-                    # di = spider.FlipkartSpider.start_requests(given_fsn)                
-                    print("Running Asin Id is:", given_fsn)  
-                    fsnid = given_fsn
-                    self.asinFileLabel["text"]= f"{i+1}) FSN-ID {fsnid} is running...."
-                    self.root.update()
-                    if di == 0:  
-                        dict_skip.append(given_fsn)
-                        continue
-                    dict_ = di
-                    print('========',dict_)                           
-                    dict_list.append(dict_)
-                    
-                    if ((i+1)%100==0):        
-                        df = pd.DataFrame(dict_list)
-                        self.output_file_name = f'{datetime.datetime.now().strftime("%Y-%m-%d")}.xlsx'
-                        df.to_excel(os.path.join(os.getcwd(), self.output_file_name), index = False)
-                        print(f"Excel file creation done for {((i+1)/100)*100} FSN-ID")
-                        self.asinFileLabel["text"] = f"Excel file creation done for {((i+1)/100)*100} FSN'S ID"
-                        self.root.update()                                         
-                df = pd.DataFrame(dict_list)
-                df2 = pd.DataFrame(columns=df.columns)
-                df2['fsn'] =  dict_skip
-                final_df = pd.concat([df,df2])
-                print(final_df)                
-                print("FSN skipping", dict_skip)
-                self.output_file_name = f'{datetime.datetime.now().strftime("%Y-%m-%d_%H-%M")}.xlsx'
-                final_df.to_excel(os.path.join(os.getcwd(), self.output_file_name), index = False)
-                self.asinFileLabel["text"]= f"All data stored at: {os.getcwd()} / {self.output_file_name}"
-                self.root.update()
-
-                self.files = LabelFrame(self.tab1, text='Open Scrapped file', font=('Arial', '12', 'bold'), bd=5, relief=RIDGE)
-                self.files.grid(row=8, column=0, columnspan=1, sticky=W, padx=20, pady=20)
-                self.scrapingFileButton = tk.Button(self.files, text="OPEN:", width=12, compound="c", bg='cornflower blue', fg='#ffffff', command=self.get_scraping_file)
-
-                self.scrapingFileButton['font'] = self.SubmitButtonFont
-                self.scrapingFileButton.grid(row=0, column=0, padx=20, pady=20)
-                
-                print("excel file creation done")
-                messagebox.showinfo("Success", f"Amozon Product Scraping Done!")
-        except Exception as err:
-            print("Exception occure:- ", err)
-
+    # def call_subprocess_command(self):
+    #     """
+    #     Call the subprocess command fo call scrapy
+    #     :return:
+    #     """
+    #     subprocess.run('scrapy crawl flipkart_spider -o tmp/data.json')
+    
     def get_scraping_file(self):
         self.output_file_name = f'{datetime.datetime.now().strftime("%Y-%m-%d_%H-%M")}.xlsx'
         # print('Root Dir:', ROOT_DIR)
         
-        pd.read_json(ROOT_DIR+'/tmp'+'/data.json').to_excel(os.path.join(os.getcwd(), self.output_file_name),index = False)
+        pd.read_json(f'{os.path.join(os.getcwd())}\\data.json').to_excel(os.path.join(os.getcwd(),self.output_file_name),index = False)
         print("output_file_name :-",self.output_file_name)
+
+        if os.path.exists("data.json"):
+            os.remove("data.json")
+        
+        
         file_path = os.getcwd()
-        file = file_path+ "//" + self.output_file_name        
+        file = file_path+ "//" + self.output_file_name
+        self.asinFileLabel["text"]= f"Out file is available now at {file})"
+        self.root.update()      
         try:
             os.system('"%s"' %file)
             print("Excel file opened")            
