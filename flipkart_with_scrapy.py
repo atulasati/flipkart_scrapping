@@ -22,6 +22,12 @@ from scrapy import Item, Field
 from scrapy.crawler import Crawler
 from scrapy.crawler import CrawlerProcess
 
+
+folders = os.listdir(".")
+for folder in folders:
+    if folder == "data.json":
+        os.remove(folder)
+
 r, w = os.pipe()
 
 settings = get_project_settings()
@@ -72,7 +78,7 @@ class FlipkartItem(Item):
     image7 = Field()
     image8 = Field()
     image9 = Field()
-    image10 = Field()
+    image10 = Field()    
 
 class FlipkartSpider(scrapy.Spider):
     name = 'flipkart_spider'
@@ -87,7 +93,7 @@ class FlipkartSpider(scrapy.Spider):
 
     def new_parsing_method(self, response):
         reward = FlipkartItem()
-        self.start_requests()
+        # self.start_requests()
 
         reward['fsin'] = response.url.split("=")[1]
         pro_dsc, size, pack_of, brand, model_name, ideal_for, country_of_origin, model_number, material, color, pattern, sleeve_type, length, width, height, weight, fit, neck, width, weight, height, warranty = [""]*22
@@ -267,12 +273,14 @@ class FlipkartSpider(scrapy.Spider):
         return reward
 
 class MailSendHandler():
-    def __init__(self,asin_file, root, clickbu):       
+    def __init__(self,asin_file, root):       
         self.asin_file = asin_file      
         self.root = root
         self.output_file_name = ""
         self.dump_file_name = ""
         self.MAX_RECORDS = 0
+        self.buttonClicked  = False
+        self.inputfile = False
         
     def initialize(self):
         self.root.geometry('700x600+0+0')
@@ -299,15 +307,19 @@ class MailSendHandler():
         MAX_RECORDS = str(self.clicked.get())
 
         self.drop.grid(row=0, column=1, columnspan=2, sticky=W, padx=15, pady=25)
-    
-        
-        self.asinFileButton['font'] = self.ButtonFont                     
+        self.asinFileButton['font'] = self.ButtonFont   
+
         self.SendButton = tk.Button(self.files, text="SUBMIT", width=12, compound="c", bg='cornflower blue', fg='#ffffff', command=self.run_spider)        
         self.SendButton['font'] = self.SubmitButtonFont
+        
+            
+
+        
         # === ADD WIDGETS TO GRID ON TAB ONE        
         self.asinFileButton.grid(row=0, column=0, padx=20, pady=20)       
         self.SendButton.grid(row=1, column=0, padx=5, pady=15)        
-        # self.tab_parent.pack(expand=3, fill='both')       
+        # self.tab_parent.pack(expand=3, fill='both')
+              
 
         root.mainloop()        
   
@@ -332,41 +344,54 @@ class MailSendHandler():
                 # except: pass  
                 # os.makedirs(ROOT_DIR+'/tmp')
                 df.to_excel(os.path.join(os.getcwd(), "FSN_id.xlsx"), index = False)
+                self.inputfile = True
             else:
                 messagebox.showerror("Error", "Open .xlsx file only")
+                self.inputfile = False
         else:           
-            messagebox.showerror("Error", "Unable to open asin file")
+            messagebox.showerror("Error", "Unable to open FSN file")
+            self.inputfile = False
         return self.asin_file
 
     def get_date(self):
-        date = '04/10/2022 18:30:30'
+        date = '06/10/2022 18:30:30'
         date = datetime.datetime.strptime(date, '%d/%m/%Y %H:%M:%S')
         max_date = date + datetime.timedelta(days=7)
         return max_date
     
-    def scrape(self):
-        process = CrawlerProcess(settings={
-            "FEEDS": {
-                "data.json": {"format": "json"},
-            },
-        })
-        process.crawl(FlipkartSpider)
-        process.start()
+    def scrape(self):        
+        if self.buttonClicked == False:            
+            process = CrawlerProcess(settings={
+                "FEEDS": {
+                    "data.json": {"format": "json"},
+                },
+            })
+            process.crawl(FlipkartSpider)
+            process.start()
+            self.get_scraping_file()
+        else:
+            messagebox.showerror("Error", "For next Input file please restart 'Flipkart_Product' application")
+            self.root.destroy()
 
     def run_spider(self):
         if datetime.datetime.now() > self.get_date(): raise Exception
-
+        if self.inputfile == False:
+            messagebox.showerror("Error", "Please First Input FSN file then click on SUBMIT")
+            return
         self.scrape()
 
         self.files = LabelFrame(self.tab1, text='Open Scrapped file', font=('Arial', '12', 'bold'), bd=5, relief=RIDGE)
         self.files.grid(row=8, column=0, columnspan=1, sticky=W, padx=20, pady=20)
-        self.scrapingFileButton = tk.Button(self.files, text="OPEN:", width=12, compound="c", bg='cornflower blue', fg='#ffffff', command=self.get_scraping_file)
+        self.scrapingFileButton = tk.Button(self.files, text="OPEN:", width=12, compound="c", bg='cornflower blue', fg='#ffffff', command=self.show_excel)
 
         self.scrapingFileButton['font'] = self.SubmitButtonFont
         self.scrapingFileButton.grid(row=0, column=0, padx=20, pady=20)
         
         print("excel file creation done")
-        messagebox.showinfo("Success", f"Amozon Product Scraping Done!")
+        messagebox.showinfo("Success", f"Amozon Product Scraping Done!")        
+        self.buttonClicked = not self.buttonClicked
+        print("self.buttonClicked:- ", self.buttonClicked)
+        
 
 
     # def call_subprocess_command(self):
@@ -383,16 +408,32 @@ class MailSendHandler():
         pd.read_json(f'{os.path.join(os.getcwd())}\\data.json').to_excel(os.path.join(os.getcwd(),self.output_file_name),index = False)
         print("output_file_name :-",self.output_file_name)
 
-        if os.path.exists("data.json"):
-            os.remove("data.json")
-        
+        all_files = os.listdir(".")
+        for files in all_files:
+            if files == "data.json":
+                os.remove(files)
         
         file_path = os.getcwd()
         file = file_path+ "//" + self.output_file_name
+        self.file_path = file
         self.asinFileLabel["text"]= f"Out file is available now at {file})"
-        self.root.update()      
+        self.root.update()     
+
+    def open_scrape_file(self):
+        self.files = LabelFrame(self.tab1, text='Open Scrapped file', font=('Arial', '12', 'bold'), bd=5, relief=RIDGE)
+        self.files.grid(row=8, column=0, columnspan=1, sticky=W, padx=20, pady=20)
+        self.scrapingFileButton = tk.Button(self.files, text="OPEN:", width=12, compound="c", bg='cornflower blue', fg='#ffffff', command=self.show_excel)
+
+        self.scrapingFileButton['font'] = self.SubmitButtonFont
+        self.scrapingFileButton.grid(row=0, column=0, padx=20, pady=20)
+        
+        print("excel file creation done")
+        messagebox.showinfo("Success", f"Amozon Product Scraping Done!")
+        
+    
+    def show_excel(self): 
         try:
-            os.system('"%s"' %file)
+            os.system('"%s"' %self.file_path)
             print("Excel file opened")            
         except:          
             messagebox.showerror("Error", "Unable to open file")
@@ -411,6 +452,6 @@ if __name__ == "__main__":
         # date = utils.get_date()
         #  ifdatetime.datetime.now() > date: raise Exception
         root.title("Flipkart Product")
-        mailSendHandler = MailSendHandler(asin_file, root, 2)
+        mailSendHandler = MailSendHandler(asin_file, root)
         mailSendHandler.initialize()
     except: print('END')
