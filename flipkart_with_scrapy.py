@@ -226,7 +226,7 @@ class FlipkartSpider(scrapy.Spider):
                     img_list = response.xpath('//div[@class="_2E1FGS _2_B7hD"]/img/@src').extract()
 
             for i, img in enumerate(img_list[:10]):
-                imgs.append(img.replace('e/128', 'e/720').replace('0/128', '0/640'))
+                imgs.append(img.replace('e/128', 'e/720').replace('0/128', '0/640').replace('/0/0/', '/720/640/'))
 
             for i in range(1,11):
                 l = len(imgs)
